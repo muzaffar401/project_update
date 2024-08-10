@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Rider Dashboard</title>
+</head>
+
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center my-5 text-primary">Rider Dashboard</h1>
+        <div id="food-donation-assignments" class="col-lg-8 offset-lg-2"></div>
+        <button id="back-button" class="btn btn-primary mb-3">Back to Login</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const currentRider = JSON.parse(localStorage.getItem('currentRider'));
+
+            if (!currentRider || !currentRider.DonateFood) {
+                document.getElementById('food-donation-assignments').innerHTML = '<p>No food donations assigned yet.</p>';
+                return;
+            }
+
+            const foodDonationAssignments = document.getElementById('food-donation-assignments');
+
+            const donationCard = document.createElement('div');
+            donationCard.classList.add('card', 'mb-3');
+            donationCard.innerHTML = `
+                <div class="card-body">
+                    <h5 class="card-title">Food Donation Assignment</h5>
+                    <p class="card-text"><strong>Name:</strong> ${currentRider.DonateFood.firstName} ${currentRider.DonateFood.lastName}</p>
+                    <p class="card-text"><strong>Email:</strong> ${currentRider.DonateFood.email}</p>
+                    <p class="card-text"><strong>Phone:</strong> ${currentRider.DonateFood.phone}</p>
+                    <p class="card-text"><strong>Message:</strong> ${currentRider.DonateFood.message}</p>
+                    <p class="card-text"><strong>Organization:</strong> ${currentRider.DonateFood.organization}</p>
+                    <p class="card-text"><strong>Newsletter:</strong> ${currentRider.DonateFood.newsletter ? 'Yes' : 'No'}</p>
+                </div>
+            `;
+            foodDonationAssignments.appendChild(donationCard);
+
+            document.getElementById('back-button').addEventListener('click', function () {
+                window.location.href = 'index.html'; // Assuming the login page is 'index.html'
+            });
+        });
+    </script>
+</body>
+
+</html>

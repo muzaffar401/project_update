@@ -8,7 +8,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <title>User Donations</title>
     <style>
-        /* Custom CSS to center only the donation section headers */
         .center-text {
             text-align: center;
         }
@@ -28,13 +27,13 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const selectedUser = JSON.parse(localStorage.getItem('selectedUser'));
+            const riders = JSON.parse(localStorage.getItem('riders')) || [];
             const moneyDonationRecords = document.getElementById('money-donation-records');
             const foodDonationRecords = document.getElementById('food-donation-records');
             const backButton = document.getElementById('back-button');
 
-            // Back button event listener
             backButton.addEventListener('click', function () {
-                window.location.href = 'index.html'; // Redirect back to the admin panel
+                window.location.href = 'index.html'; 
             });
 
             if (!selectedUser) {
@@ -43,7 +42,6 @@
                 return;
             }
 
-            // Display Donate Money Records
             if (selectedUser.DonateMoney && selectedUser.DonateMoney.length > 0) {
                 const moneyHeader = document.createElement('h3');
                 moneyHeader.textContent = 'Money Donations';
@@ -76,7 +74,6 @@
                 moneyDonationRecords.appendChild(noMoneyDonations);
             }
 
-            // Display Donate Food Records
             if (selectedUser.DonateFood && selectedUser.DonateFood.length > 0) {
                 const foodHeader = document.createElement('h3');
                 foodHeader.textContent = 'Food Donations';
@@ -84,6 +81,9 @@
                 foodDonationRecords.appendChild(foodHeader);
 
                 selectedUser.DonateFood.forEach((donation, index) => {
+                    const availableRiders = riders.filter(rider => rider.available !== false);
+                    const riderOptions = availableRiders.map((rider, riderIndex) => `<option value="${riderIndex}">${rider.riderName}</option>`).join('');
+
                     const donationCard = document.createElement('div');
                     donationCard.classList.add('card', 'no-border-card', 'mb-3');
                     donationCard.innerHTML = `
@@ -95,6 +95,11 @@
                             <p class="card-text"><strong>Message:</strong> ${donation.message}</p>
                             <p class="card-text"><strong>Organization:</strong> ${donation.organization}</p>
                             <p class="card-text"><strong>Newsletter:</strong> ${donation.newsletter ? 'Yes' : 'No'}</p>
+                            <select class="form-select mb-3" id="riderSelect${index}">
+                                <option value="">Select Rider</option>
+                                ${riderOptions || '<option value="">No available riders</option>'}
+                            </select>
+                            <button class="btn btn-success btn-sm send-to-rider-btn" data-index="${index}" ${riderOptions ? '' : 'disabled'}>Send to Rider</button>
                             <button class="btn btn-danger btn-sm delete-btn" data-index="${index}" data-type="food">Delete</button>
                         </div>
                     `;
@@ -106,7 +111,39 @@
                 foodDonationRecords.appendChild(noFoodDonations);
             }
 
-            // Add event listeners for delete buttons for donations
+            document.querySelectorAll('.send-to-rider-btn').forEach(button => {
+                button.addEventListener('click', function () {
+                    const donationIndex = this.dataset.index;
+                    const riderSelect = document.getElementById(`riderSelect${donationIndex}`);
+                    const selectedRiderIndex = riderSelect.value;
+                    const selectedRider = riders[selectedRiderIndex];
+                    const donation = selectedUser.DonateFood[donationIndex];
+
+                    if (selectedRider && selectedRider.available !== false) {
+                        selectedRider.DonateFood = donation;
+                        selectedRider.available = false;
+
+                        // Update localStorage
+                        riders[selectedRiderIndex] = selectedRider;
+                        localStorage.setItem('riders', JSON.stringify(riders));
+
+                        // Update the selected user data to remove the assigned donation
+                        selectedUser.DonateFood.splice(donationIndex, 1);
+                        localStorage.setItem('selectedUser', JSON.stringify(selectedUser));
+
+                        const users = JSON.parse(localStorage.getItem('users')) || [];
+                        const userIndex = users.findIndex(user => user.username === selectedUser.username);
+                        users[userIndex] = selectedUser;
+                        localStorage.setItem('users', JSON.stringify(users));
+
+                        // Refresh the page to update the UI
+                        location.reload();
+                    } else {
+                        alert('Please select a valid rider.');
+                    }
+                });
+            });
+
             document.querySelectorAll('.delete-btn').forEach(button => {
                 button.addEventListener('click', function () {
                     const index = this.dataset.index;
@@ -117,14 +154,13 @@
                         } else if (type === 'food') {
                             selectedUser.DonateFood.splice(index, 1);
                         }
-                        // Update localStorage
                         localStorage.setItem('selectedUser', JSON.stringify(selectedUser));
+
                         const users = JSON.parse(localStorage.getItem('users')) || [];
                         const userIndex = users.findIndex(user => user.username === selectedUser.username);
                         users[userIndex] = selectedUser;
                         localStorage.setItem('users', JSON.stringify(users));
 
-                        // Remove the donation card from the DOM
                         const donationCard = this.closest('.card');
                         donationCard.remove();
                     }

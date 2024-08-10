@@ -29,11 +29,27 @@
 					<span class="text">Dashboard</span>
 				</a>
 			</li>
+			<li class="active">
+				<a href="#">
+					<i class='bx bxs-dashboard'></i>
+					<span class="text">Users</span>
+				</a>
+			</li>
+			<li class="active">
+				<a href="ridersData.html">
+					<i class='bx bxs-dashboard'></i>
+					<span class="text">Riders</span>
+				</a>
+			</li>
+			<li class="active">
+				<a href="#">
+					<i class='bx bxs-dashboard'></i>
+					<span class="text">Volunteers</span>
+				</a>
+			</li>
 		</ul>
 	</section>
 	<!-- SIDEBAR -->
-
-
 
 	<!-- CONTENT -->
 	<section id="content">
@@ -43,7 +59,7 @@
 			<a href="#" class="nav-link">Categories</a>
 			<form action="#">
 				<div class="form-input">
-					<input type="search" placeholder="Search...">
+					<input type="search" id="user-search" placeholder="Search...">
 					<button type="submit" class="search-btn"><i class='bx bx-search'></i></button>
 				</div>
 			</form>
@@ -100,8 +116,26 @@
 			</ul>
 		</main>
 		<!-- MAIN -->
+		<h1 class="text-center my-5 text-primary">Admin Panel</h1>
+
+		<div class="container">
+			<div class="row">
+				<div class="col-lg-6">
+					<button id="sort-toggle" class="btn btn-primary w-100">
+						<span id="sort-text">Sort A-Z</span> <i id="sort-icon" class='bx bx-up-arrow-alt'></i>
+					</button>
+				</div>
+				<div class="col-lg-6">
+					<select id="user-count-select" class="form-select">
+						<option value="All" selected disabled>Show All</option>
+						<option value="5">5</option>
+						<option value="10">10</option>
+						<option value="15">15</option>
+					</select>
+				</div>
+			</div>
+		</div>
 		<div class="container mt-5">
-			<h1 class="text-center my-5 text-primary">Admin Panel</h1>
 			<div id="user-data-list" class="row text-"></div>
 			<div id="donation-records" class="mt-3">
 				<button id="back-button" class="btn btn-primary mb-3">Back</button>
@@ -109,9 +143,102 @@
 		</div>
 	</section>
 
+
+
 	<script>
 		document.addEventListener('DOMContentLoaded', function () {
 			const users = JSON.parse(localStorage.getItem('users')) || [];
+			let isAscending = true; // Track sort order
+
+			function displayUsers(filteredUsers) {
+				const userDataList = document.getElementById('user-data-list');
+				userDataList.innerHTML = ''; // Clear previous user cards
+
+				// Get the selected number of users to display
+				const userCount = document.getElementById('user-count-select').value;
+				const displayCount = userCount === 'All' ? filteredUsers.length : parseInt(userCount);
+
+				const usersToDisplay = filteredUsers.slice(0, displayCount);
+
+				if (usersToDisplay.length > 0) {
+					usersToDisplay.forEach(user => {
+						const colDiv = document.createElement('div');
+						colDiv.classList.add('col-lg-4', 'col-md-6', 'col-sm-6', 'mb-3');
+						const userCard = document.createElement('div');
+						userCard.classList.add('card', 'no-border-card', 'h-100');
+						userCard.innerHTML = `
+                    <div class="card-body border-1 p-5 mt-5 text-center">
+                        <img id="profileImage" src="${user.profileImage || 'user-image-with-black-background.png'}" alt="Profile Image" style="display: block; margin: 0 auto;" class="mb-4">
+                        <h5 class="card-title fs-3">Username: ${user.username}</h5>
+                        <p class="card-text fs-5"><strong>Email:</strong> ${user.email}</p>
+                        <p class="card-text fs-5"><strong>Phone:</strong> ${user.phone}</p>
+                        <button class="btn btn-primary fs-5 mt-4 donate-btn" data-user="${user.username}">View Donations</button>
+                    </div>
+                `;
+						colDiv.appendChild(userCard);
+						userDataList.appendChild(colDiv);
+					});
+				} else {
+					// Display "No user found" message
+					const noUserDiv = document.createElement('div');
+					noUserDiv.classList.add('col-12', 'text-center', 'my-5');
+					noUserDiv.innerHTML = `<h5 class="text-muted">No user found</h5>`;
+					userDataList.appendChild(noUserDiv);
+				}
+
+				// Redirect to userDonationData.html when clicking "View Donations"
+				document.querySelectorAll('.donate-btn').forEach(button => {
+					button.addEventListener('click', function () {
+						const username = this.dataset.user;
+						const user = users.find(user => user.username === username);
+						localStorage.setItem('selectedUser', JSON.stringify(user));
+						window.location.href = 'userDonationData.html';
+					});
+				});
+			}
+
+			function sortUsers() {
+				const searchTerm = document.getElementById('user-search').value.toLowerCase();
+				let filteredUsers = users.filter(user => user.username.toLowerCase().startsWith(searchTerm));
+
+				filteredUsers.sort((a, b) => {
+					if (isAscending) {
+						return a.username.localeCompare(b.username);
+					} else {
+						return b.username.localeCompare(a.username);
+					}
+				});
+
+				displayUsers(filteredUsers);
+			}
+
+			// Initial display of all users
+			displayUsers(users);
+
+			// Search functionality
+			const searchInput = document.getElementById('user-search');
+			searchInput.addEventListener('input', function () {
+				sortUsers();
+			});
+
+			// Toggle sorting functionality
+			const sortButton = document.getElementById('sort-toggle');
+			const sortIcon = document.getElementById('sort-icon');
+			const sortText = document.getElementById('sort-text');
+
+			sortButton.addEventListener('click', function () {
+				isAscending = !isAscending; // Toggle sort order
+				sortIcon.classList.toggle('bx-up-arrow-alt', isAscending);
+				sortIcon.classList.toggle('bx-down-arrow-alt', !isAscending);
+				sortText.textContent = isAscending ? 'Sort A-Z' : 'Sort Z-A';
+				sortUsers();
+			});
+
+			// Handle the dropdown to show a specific number of users
+			const userCountSelect = document.getElementById('user-count-select');
+			userCountSelect.addEventListener('change', function () {
+				sortUsers();
+			});
 
 			// Update the total users count
 			document.querySelector('#total-users h3').textContent = users.length;
@@ -132,42 +259,7 @@
 			// Update the dashboard counters
 			document.querySelector('#total-food-donations h3').textContent = totalFoodDonations;
 			document.querySelector('#money-donation-count h3').textContent = totalMoneyDonations;
-
-			// Other existing code...
-
-			// Display User Data
-			const userDataList = document.getElementById('user-data-list');
-			users.forEach(user => {
-				const colDiv = document.createElement('div');
-				colDiv.classList.add('col-lg-4', 'col-md-6', 'col-sm-6', 'mb-3');
-				const userCard = document.createElement('div');
-				userCard.classList.add('card', 'no-border-card', 'h-100');
-				userCard.innerHTML = `
-            <div class="card-body border-1 p-5 mt-5">
-                <img id="profileImage" src="${user.profileImage || 'user-image-with-black-background.png'}" alt="Profile Image">
-                <h5 class="card-title mt-4 fs-3">Username: ${user.username}</h5>
-                <p class="card-text mt-4 fs-5"><strong>Email:</strong> ${user.email}</p>
-                <p class="card-text mt-4 fs-5"><strong>Phone:</strong> ${user.phone}</p>
-                <button class="btn btn-primary fs-5 mt-4 donate-btn" data-user="${user.username}">View Donations</button>
-            </div>
-        `;
-				colDiv.appendChild(userCard);
-				userDataList.appendChild(colDiv);
-			});
-
-			// Redirect to userDonationData.html when clicking "View Donations"
-			document.querySelectorAll('.donate-btn').forEach(button => {
-				button.addEventListener('click', function () {
-					const username = this.dataset.user;
-					const user = users.find(user => user.username === username);
-					localStorage.setItem('selectedUser', JSON.stringify(user));
-					window.location.href = 'userDonationData.html';
-				});
-			});
 		});
-
-
-
 
 
 		const allSideMenu = document.querySelectorAll('#sidebar .side-menu.top li a');
@@ -247,6 +339,8 @@
 			}
 		})
 	</script>
+
+
 
 
 </body>
